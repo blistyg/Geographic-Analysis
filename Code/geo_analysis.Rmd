@@ -28,7 +28,7 @@ diversity_data = diversity_data %>%
   rename("diversity_score" = ent_score_acsglyt) %>% 
   janitor::clean_names()
 
-employment = read.csv("C:/Users/ben.listyg/Downloads/CAEMP25N__ALL_AREAS_2001_2020.csv")
+employment = read.csv("CAEMP25N__ALL_AREAS_2001_2020.csv")
 
 education = employment %>% 
   mutate(Description = trimws(Description),
