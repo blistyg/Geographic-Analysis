@@ -1,0 +1,229 @@
+---
+title: "Preliminary Geographic Equitable Access Analysis"
+author: "Ben Listyg"
+date: "4/29/2022"
+output: pdf_document
+---
+
+# Background
+
+The purpose of this analysis is to provide a preliminary examination of geographic areas, in this case counties, that are both a) high in employer demand for positions relevant for WGU students and b) high in diversity for the purposes of promoting equitable access to resources for under-served communities. 
+
+## Ranking counties by employment opportunities
+
+For this portion of analyses, I use data from the [United States Bureau of Economic Analysis (BEA)](https://apps.bea.gov/regional/downloadzip.cfm) on the number of openings by NAICS Industry Code. I segment these codes into 4 buckets relevant to each WGU College: Education (Teacher's College). Health Care and Social Assistance (College of Health Professionals), Management (College of Business), and Information (College of IT).
+
+```{r setup, include=FALSE, warning=F,echo=F}
+library(readxl)
+library(dplyr)
+library(fastDummies)
+library(RankAggreg)
+
+diversity_data = read_xlsx('C:/Users/ben.listyg/Downloads/data-indicator-147-display-2-018443d2270f9cd90f83c3a586056833 (1).xlsx') %>% filter(year == max(year))
+
+diversity_data = diversity_data %>% 
+  mutate(GEO_NAME = toupper(trimws(GEO_NAME)),
+         ent_score_acsglyt = as.numeric(ent_score_acsglyt)) %>% 
+  select(GEO_NAME, ent_score_acsglyt) %>% 
+  rename("diversity_score" = ent_score_acsglyt) %>% 
+  janitor::clean_names()
+
+employment = read.csv("C:/Users/ben.listyg/Downloads/CAEMP25N__ALL_AREAS_2001_2020.csv")
+
+education = employment %>% 
+  mutate(Description = trimws(Description),
+         GeoName = toupper(trimws(GeoName))) %>% 
+  filter(GeoName %in% diversity_data$geo_name) %>% 
+  filter(Description %in% c("Educational services",
+                            "Health care and social assistance",
+                            "Information",
+                            "Professional, scientific, and technical services",
+                            "Management of companies and enterprises")) %>% 
+  select(GeoFIPS:Description, X2020) %>% 
+  fastDummies::dummy_cols(select_columns = 'Description') %>% 
+  janitor::clean_names() %>% 
+  filter(description_educational_services == 1) %>% 
+  filter(x2020 != "(D)") %>% 
+  select(-contains("description_")) %>% 
+  inner_join(., diversity_data) %>% 
+  select(geo_name, x2020, diversity_score) %>% 
+  mutate(x2020 = as.numeric(x2020),
+         diversity_score = as.numeric(diversity_score))
+
+health = employment %>% 
+  mutate(Description = trimws(Description),
+         GeoName = toupper(trimws(GeoName))) %>% 
+  filter(GeoName %in% diversity_data$geo_name) %>% 
+  filter(Description %in% c("Educational services",
+                            "Health care and social assistance",
+                            "Information",
+                            "Professional, scientific, and technical services",
+                            "Management of companies and enterprises")) %>% 
+  select(GeoFIPS:Description, X2020) %>% 
+  fastDummies::dummy_cols(select_columns = 'Description') %>% 
+  janitor::clean_names() %>% 
+  filter(description_health_care_and_social_assistance == 1) %>% 
+  filter(x2020 != "(D)") %>% 
+  select(-contains("description_")) %>% 
+  inner_join(., diversity_data) %>% 
+  select(geo_name, x2020, diversity_score) %>% 
+  mutate(x2020 = as.numeric(x2020),
+         diversity_score = as.numeric(diversity_score))
+
+mgmt = employment %>% 
+  mutate(Description = trimws(Description),
+         GeoName = toupper(trimws(GeoName))) %>% 
+  filter(GeoName %in% diversity_data$geo_name) %>% 
+  filter(Description %in% c("Educational services",
+                            "Health care and social assistance",
+                            "Information",
+                            "Professional, scientific, and technical services",
+                            "Management of companies and enterprises")) %>% 
+  select(GeoFIPS:Description, X2020) %>% 
+  fastDummies::dummy_cols(select_columns = 'Description') %>% 
+  janitor::clean_names() %>% 
+  filter(description_management_of_companies_and_enterprises == 1) %>% 
+  filter(x2020 != "(D)") %>% 
+  select(-contains("description_")) %>% 
+  inner_join(., diversity_data) %>% 
+  select(geo_name, x2020, diversity_score) %>% 
+  mutate(x2020 = as.numeric(x2020),
+         diversity_score = as.numeric(diversity_score))
+
+info = employment %>% 
+  mutate(Description = trimws(Description),
+         GeoName = toupper(trimws(GeoName))) %>% 
+  filter(GeoName %in% diversity_data$geo_name) %>% 
+  filter(Description %in% c("Educational services",
+                            "Health care and social assistance",
+                            "Information",
+                            "Professional, scientific, and technical services",
+                            "Management of companies and enterprises")) %>% 
+  select(GeoFIPS:Description, X2020) %>% 
+  fastDummies::dummy_cols(select_columns = 'Description') %>% 
+  janitor::clean_names() %>% 
+  filter(description_information == 1) %>% 
+  filter(x2020 != "(D)") %>% 
+  select(-contains("description_")) %>% 
+  inner_join(., diversity_data) %>% 
+  select(geo_name, x2020, diversity_score) %>% 
+  mutate(x2020 = as.numeric(x2020),
+         diversity_score = as.numeric(diversity_score))
+
+```
+
+### Top 20 counties for Education-related occupation openings
+
+```{r, include=T, warning=F,echo=F}
+out = head(select(education,-diversity_score) %>% arrange(-x2020),20)
+out = out %>% rename("County" = geo_name, "Number of Openings" = x2020)
+knitr::kable(select(out, County))
+```
+
+### Top 20 counties for Health-related occupation openings
+
+```{r, include=T, warning=F,echo=F}
+out = head(select(health,-diversity_score) %>% arrange(-x2020),20)
+out = out %>% rename("County" = geo_name, "Number of Openings" = x2020)
+knitr::kable(select(out, County))
+```
+
+### Top 20 counties for Management-related occupation openings
+
+```{r, include=T, warning=F,echo=F}
+out = head(select(mgmt,-diversity_score) %>% arrange(-x2020),20)
+out = out %>% rename("County" = geo_name, "Number of Openings" = x2020)
+knitr::kable(select(out, County))
+```
+
+### Top 20 counties for IT-related occupation openings
+
+```{r, include=T, warning=F,echo=F}
+out = head(select(info,-diversity_score) %>% arrange(-x2020),20)
+out = out %>% rename("County" = geo_name, "Number of Openings" = x2020)
+knitr::kable(select(out, County))
+```
+
+## Ranking counties by diversity
+
+For this portion of analyses, I use Diversity Index data from the [National Equity Atlas](https://nationalequityatlas.org/) to compute the diversity of counties in the US. The Diversity Index is "a summary score that provides a snapshot of how well a given place is performing on racial equity compared to its peers...the Racial Equity Index is based on two components: an inclusion score that indicates the extent of racial gaps in outcomes for a series of nine equity indicators, and a prosperity score that indicates how well the population is doing overall on those same indicators." (see [this](https://nationalequityatlas.org/research/introducingindex) link for more information on how this value is computed).
+
+### Top 20 most diverse counties
+
+```{r, include=T, warning=F,echo=F}
+out = diversity_data %>% arrange(-diversity_score)
+out = out %>% rename("County" = geo_name, "Diversity Score" = diversity_score)
+knitr::kable(head(select(out, County),20))
+```
+
+## Aggregating rankings
+
+To combine these rankings into a single ranking of both diversity and available employment opportunities, I average their rankings on these two categories and re-rank them based on this new value.
+
+### Top 20 most diverse counties for Education-related occupation openings
+
+```{r, include=T, warning=F,echo=F, fig.show=F}
+education %>% 
+  arrange(-x2020) %>% 
+  mutate(emp_rank = 1:nrow(.)) %>% 
+  arrange(-diversity_score) %>% 
+  mutate(diversity_rank = 1:nrow(.)) %>% 
+  mutate(avg_rank = rowMeans(select(., emp_rank, diversity_rank))) %>% 
+  arrange(avg_rank) %>% 
+  mutate(avg_rank = 1:nrow(.)) %>% 
+  select(geo_name, avg_rank, emp_rank, diversity_rank) %>% 
+  rename("County" = geo_name, "Average Ranking" = avg_rank, "Employment Ranking" = emp_rank, "Diversity Ranking" = diversity_rank) %>% 
+  head(20) %>% 
+  knitr::kable()
+```
+
+### Top 20 most diverse counties for Health-related occupation openings
+
+```{r, include=T, warning=F,echo=F, fig.show=F}
+health %>% 
+  arrange(-x2020) %>% 
+  mutate(emp_rank = 1:nrow(.)) %>% 
+  arrange(-diversity_score) %>% 
+  mutate(diversity_rank = 1:nrow(.)) %>% 
+  mutate(avg_rank = rowMeans(select(., emp_rank, diversity_rank))) %>% 
+  arrange(avg_rank) %>% 
+  mutate(avg_rank = 1:nrow(.)) %>% 
+  select(geo_name, avg_rank, emp_rank, diversity_rank) %>% 
+  rename("County" = geo_name, "Average Ranking" = avg_rank, "Employment Ranking" = emp_rank, "Diversity Ranking" = diversity_rank) %>% 
+  head(20) %>% 
+  knitr::kable()
+```
+
+### Top 20 most diverse counties for Management-related occupation openings
+
+```{r, include=T, warning=F,echo=F, fig.show=F}
+mgmt %>% 
+  arrange(-x2020) %>% 
+  mutate(emp_rank = 1:nrow(.)) %>% 
+  arrange(-diversity_score) %>% 
+  mutate(diversity_rank = 1:nrow(.)) %>% 
+  mutate(avg_rank = rowMeans(select(., emp_rank, diversity_rank))) %>% 
+  arrange(avg_rank) %>% 
+  mutate(avg_rank = 1:nrow(.)) %>% 
+  select(geo_name, avg_rank, emp_rank, diversity_rank) %>% 
+  rename("County" = geo_name, "Average Ranking" = avg_rank, "Employment Ranking" = emp_rank, "Diversity Ranking" = diversity_rank) %>% 
+  head(20) %>% 
+  knitr::kable()
+```
+
+### Top 20 most diverse counties for IT-related occupation openings
+
+```{r, include=T, warning=F,echo=F, fig.show=F}
+info %>% 
+  arrange(-x2020) %>% 
+  mutate(emp_rank = 1:nrow(.)) %>% 
+  arrange(-diversity_score) %>% 
+  mutate(diversity_rank = 1:nrow(.)) %>% 
+  mutate(avg_rank = rowMeans(select(., emp_rank, diversity_rank))) %>% 
+  arrange(avg_rank) %>% 
+  mutate(avg_rank = 1:nrow(.)) %>% 
+  select(geo_name, avg_rank, emp_rank, diversity_rank) %>% 
+  rename("County" = geo_name, "Average Ranking" = avg_rank, "Employment Ranking" = emp_rank, "Diversity Ranking" = diversity_rank) %>% 
+  head(20) %>% 
+  knitr::kable()
+```
