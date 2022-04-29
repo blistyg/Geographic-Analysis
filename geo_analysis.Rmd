@@ -19,7 +19,7 @@ library(dplyr)
 library(fastDummies)
 library(RankAggreg)
 
-diversity_data = read_xlsx('C:/Users/ben.listyg/Downloads/data-indicator-147-display-2-018443d2270f9cd90f83c3a586056833 (1).xlsx') %>% filter(year == max(year))
+diversity_data = read_xlsx('data-indicator-147-display-2-018443d2270f9cd90f83c3a586056833.xlsx') %>% filter(year == max(year))
 
 diversity_data = diversity_data %>% 
   mutate(GEO_NAME = toupper(trimws(GEO_NAME)),
