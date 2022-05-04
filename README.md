@@ -13,3 +13,4 @@ Potential next steps:
   3) Compute ranks for different region levels beyond county (e.g. MSA, city, ZIP code, etc.)
   4) Add degree information/find degree deserts using IPEDS data (@davidlangwgu is adding this, see his branch)
   5) Use alternative occupational coding schemes.
+  6) Add salary + COL data as part of the ranking
